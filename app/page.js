@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Mail, X, Plus, Check, Trash2, MailQuestion, Settings2, ExternalLink, AlertCircle, Copy, ClipboardCheck, Info, SendHorizontal, CornerDownLeft, Database, ToggleRight, ToggleLeft, AtSign } from 'lucide-react';
 
