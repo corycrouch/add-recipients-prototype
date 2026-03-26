@@ -11,6 +11,7 @@ const App = () => {
   const [copyFeedback, setCopyFeedback] = useState(null);
   const [isSyncedMode, setIsSyncedMode] = useState(false); // Testing toggle
   const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0); // For arrow key navigation
   
   const inputRef = useRef(null);
   const popoverRef = useRef(null);
@@ -36,6 +37,11 @@ const App = () => {
         contact.email.toLowerCase().includes(inputValue.toLowerCase())
       ).filter(contact => !recipients.find(r => r.email === contact.email))
     : [];
+
+  // Reset selected index when search results or input change
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [inputValue, isSyncedMode]);
 
   // --- Testing Data for Toolbox ---
   const testEmails = [
@@ -127,9 +133,11 @@ const App = () => {
     if (!inputValue.trim()) return;
 
     if (showDropdown && isSyncedMode) {
-      if (searchResults.length > 0) {
-        addRecipient(searchResults[0], false);
+      // If selectedIndex is within searchResults, add that contact
+      if (selectedIndex < searchResults.length) {
+        addRecipient(searchResults[selectedIndex], false);
       } else {
+        // Otherwise, it's the 'Add as new person' fallback
         processInput(inputValue);
       }
     } else {
@@ -153,10 +161,24 @@ const App = () => {
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && showDropdown && isSyncedMode && inputValue.trim()) {
+    if (showDropdown && isSyncedMode && inputValue.trim()) {
+      const totalItems = searchResults.length + 1; // +1 for the fallback option
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev + 1) % totalItems);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev - 1 + totalItems) % totalItems);
+        return;
+      }
+      if (e.key === 'Enter') {
         e.preventDefault();
         commitInput();
         return;
+      }
     }
 
     if (e.key === 'Enter') {
@@ -436,19 +458,20 @@ const App = () => {
                           key={i}
                           onMouseDown={(e) => e.preventDefault()}
                           onClick={() => addRecipient(contact, false)}
+                          onMouseEnter={() => setSelectedIndex(i)}
                           className={`w-full flex items-center gap-3 p-3 transition-colors border-b border-stone-100 text-left group
-                            ${i === 0 ? 'bg-stone-50 ring-inset ring-2 ring-orange-100' : 'hover:bg-stone-50'}`}
+                            ${selectedIndex === i ? 'bg-stone-50 ring-inset ring-2 ring-orange-100' : 'hover:bg-stone-50'}`}
                         >
                           <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-colors
-                            ${i === 0 ? 'bg-orange-100 text-orange-700' : 'bg-purple-100 text-purple-700 group-hover:bg-purple-200'}`}>
+                            ${selectedIndex === i ? 'bg-orange-100 text-orange-700' : 'bg-purple-100 text-purple-700 group-hover:bg-purple-200'}`}>
                             {contact.firstName[0]}
                           </div>
                           <div className="flex flex-col">
                             <div className="flex items-center gap-2">
-                                <span className={`text-sm font-bold transition-colors ${i === 0 ? 'text-orange-600' : 'text-stone-900 group-hover:text-orange-600'}`}>
+                                <span className={`text-sm font-bold transition-colors ${selectedIndex === i ? 'text-orange-600' : 'text-stone-900 group-hover:text-orange-600'}`}>
                                 {contact.firstName} {contact.lastName}
                                 </span>
-                                {i === 0 && <span className="text-[8px] font-black bg-orange-200 text-orange-800 px-1 rounded">ENTER / BLUR</span>}
+                                {selectedIndex === i && <span className="text-[8px] font-black bg-orange-200 text-orange-800 px-1 rounded">ENTER / BLUR</span>}
                             </div>
                             <div className="flex items-center gap-2 text-[11px] text-stone-400 font-medium">
                               <span>{contact.jobTitle}</span>
@@ -462,19 +485,20 @@ const App = () => {
                       <button
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => processInput(inputValue)}
+                        onMouseEnter={() => setSelectedIndex(searchResults.length)}
                         className={`w-full flex items-center gap-3 p-3 transition-colors text-left group
-                          ${searchResults.length === 0 ? 'bg-stone-50 ring-inset ring-2 ring-orange-100' : 'hover:bg-stone-50'}`}
+                          ${selectedIndex === searchResults.length ? 'bg-stone-50 ring-inset ring-2 ring-orange-100' : 'hover:bg-stone-50'}`}
                       >
                         <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors
-                          ${searchResults.length === 0 ? 'bg-orange-100 text-orange-600' : 'bg-stone-100 text-stone-500 group-hover:bg-orange-100 group-hover:text-orange-600'}`}>
+                          ${selectedIndex === searchResults.length ? 'bg-orange-100 text-orange-600' : 'bg-stone-100 text-stone-50 group-hover:bg-orange-100 group-hover:text-orange-600'}`}>
                           <AtSign size={16} />
                         </div>
                         <div className="flex flex-col">
                             <div className="flex items-center gap-2">
-                                <span className={`text-sm font-bold transition-colors ${searchResults.length === 0 ? 'text-orange-600' : 'text-stone-600 group-hover:text-stone-900'}`}>
+                                <span className={`text-sm font-bold transition-colors ${selectedIndex === searchResults.length ? 'text-orange-600' : 'text-stone-600 group-hover:text-stone-900'}`}>
                                     Add <span>"{inputValue}"</span> as a new person
                                 </span>
-                                {searchResults.length === 0 && <span className="text-[8px] font-black bg-orange-200 text-orange-800 px-1 rounded">ENTER / BLUR</span>}
+                                {selectedIndex === searchResults.length && <span className="text-[8px] font-black bg-orange-200 text-orange-800 px-1 rounded">ENTER / BLUR</span>}
                             </div>
                         </div>
                       </button>
