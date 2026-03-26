@@ -1,17 +1,14 @@
-'use client'; // <--- THIS IS THE MAGIC LINE
-
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Mail, X, Plus, Check, Trash2, MailQuestion, Settings2, ExternalLink, AlertCircle, Copy, ClipboardCheck, Info, SendHorizontal, CornerDownLeft, Database, ToggleRight, ToggleLeft, AtSign } from 'lucide-react';
 
-// Renamed to 'Page' for Next.js standards
-export default function Page() {
+const App = () => {
   const [inputValue, setInputValue] = useState('');
   const [recipients, setRecipients] = useState([]);
   const [editingIndex, setEditingIndex] = useState(null);
   const [backupData, setBackupData] = useState(null); 
   const [copyFeedback, setCopyFeedback] = useState(null);
   const [isShaking, setIsShaking] = useState(false);
-  const [isSyncedMode, setIsSyncedMode] = useState(false); 
+  const [isSyncedMode, setIsSyncedMode] = useState(false); // Testing toggle
   const [showDropdown, setShowDropdown] = useState(false);
   
   const inputRef = useRef(null);
@@ -30,6 +27,7 @@ export default function Page() {
     { email: "bob.bebberson@test.com", firstName: "Bob", lastName: "Bebberson", jobTitle: "Quality Assurance" }
   ];
 
+  // Filtered results based on input
   const searchResults = isSyncedMode && inputValue.trim() 
     ? syncedDirectory.filter(contact => 
         contact.firstName.toLowerCase().includes(inputValue.toLowerCase()) || 
@@ -38,6 +36,7 @@ export default function Page() {
       ).filter(contact => !recipients.find(r => r.email === contact.email))
     : [];
 
+  // --- Testing Data for Toolbox ---
   const testEmails = [
     { email: "jane.doe@enterprise.com", label: "First.Last" },
     { email: "sarah.j.parker@hbo.com", label: "Two Periods" },
@@ -144,6 +143,7 @@ export default function Page() {
   };
 
   const handleKeyDown = (e) => {
+    // If synced dropdown is open, Enter picks the top highlighted item
     if (e.key === 'Enter' && showDropdown && isSyncedMode && inputValue.trim()) {
         e.preventDefault();
         if (searchResults.length > 0) {
@@ -246,6 +246,7 @@ export default function Page() {
             <p className="text-sm text-stone-500 italic">Illustrates interactions, NOT visuals</p>
           </div>
 
+          {/* TESTING TOGGLE */}
           <div className="flex items-center gap-3 bg-white border border-stone-200 px-4 py-2 rounded-xl shadow-sm">
             <div className="flex items-center gap-2">
               <Mail size={16} className={isSyncedMode ? 'text-blue-500' : 'text-stone-400'} />
@@ -275,6 +276,7 @@ export default function Page() {
                   ${editingIndex !== null ? 'border-orange-200 shadow-md ring-4 ring-orange-50/50' : 'border-stone-200 focus-within:border-orange-400 focus-within:ring-4 focus-within:ring-orange-50/50'}`}
                 onClick={() => inputRef.current?.focus()}
               >
+                {/* Recipient Chips */}
                 {recipients.map((r, idx) => (
                   <div key={r.id} className="relative inline-block h-8">
                     <div 
@@ -394,6 +396,12 @@ export default function Page() {
                                     : 'bg-stone-200 text-stone-400 cursor-not-allowed'}`}
                             >
                                 <span>Save</span>
+                                <span className={`flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded border transition-all
+                                    ${!r.isInvalid 
+                                        ? 'opacity-70 bg-black/10 border-white/10' 
+                                        : 'opacity-40 bg-stone-300/50 border-stone-400/20'}`}>
+                                    Press <CornerDownLeft size={10} strokeWidth={4} />
+                                </span>
                             </button>
                           </div>
                         </div>
@@ -402,6 +410,7 @@ export default function Page() {
                   </div>
                 ))}
 
+                {/* Text Input Area */}
                 <div className="flex-1 relative min-w-[240px]">
                   <input
                     ref={inputRef}
@@ -413,10 +422,75 @@ export default function Page() {
                     }}
                     onKeyDown={handleKeyDown}
                     onFocus={() => setShowDropdown(true)}
-                    placeholder={recipients.length === 0 ? "Paste emails..." : "Add another..."}
+                    placeholder={recipients.length === 0 ? "Paste emails separated by commas or spaces..." : "Add another email..."}
                     className="w-full outline-none text-sm text-stone-900 font-bold bg-transparent h-8 py-0 leading-none"
                   />
                 </div>
+
+                {/* FULL WIDTH SYNCED DROPDOWN */}
+                {showDropdown && isSyncedMode && inputValue.trim() && (
+                  <div 
+                    ref={dropdownRef}
+                    className="absolute top-full left-0 mt-3 w-full bg-white rounded-2xl shadow-2xl border-2 border-stone-200 overflow-hidden z-[60] animate-in fade-in slide-in-from-top-2 duration-200"
+                  >
+                    <div className="max-h-[300px] overflow-y-auto">
+                      {searchResults.map((contact, i) => (
+                        <button
+                          key={i}
+                          onClick={() => addRecipient(contact, false)}
+                          className={`w-full flex items-center gap-3 p-3 transition-colors border-b border-stone-100 text-left group
+                            ${i === 0 ? 'bg-stone-50 ring-inset ring-2 ring-orange-100' : 'hover:bg-stone-50'}`}
+                        >
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-colors
+                            ${i === 0 ? 'bg-orange-100 text-orange-700' : 'bg-purple-100 text-purple-700 group-hover:bg-purple-200'}`}>
+                            {contact.firstName[0]}
+                          </div>
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                                <span className={`text-sm font-bold transition-colors ${i === 0 ? 'text-orange-600' : 'text-stone-900 group-hover:text-orange-600'}`}>
+                                {contact.firstName} {contact.lastName}
+                                </span>
+                                {i === 0 && <span className="text-[8px] font-black bg-orange-200 text-orange-800 px-1 rounded">ENTER</span>}
+                            </div>
+                            <div className="flex items-center gap-2 text-[11px] text-stone-400 font-medium">
+                              <span>{contact.jobTitle}</span>
+                              <span className="w-1 h-1 bg-stone-200 rounded-full"></span>
+                              <span>{contact.email}</span>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+
+                      <button
+                        onClick={() => processInput(inputValue)}
+                        className={`w-full flex items-center gap-3 p-3 transition-colors text-left group
+                          ${searchResults.length === 0 ? 'bg-stone-50 ring-inset ring-2 ring-orange-100' : 'hover:bg-stone-50'}`}
+                      >
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors
+                          ${searchResults.length === 0 ? 'bg-orange-100 text-orange-600' : 'bg-stone-100 text-stone-500 group-hover:bg-orange-100 group-hover:text-orange-600'}`}>
+                          <AtSign size={16} />
+                        </div>
+                        <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                                <span className={`text-sm font-bold transition-colors ${searchResults.length === 0 ? 'text-orange-600' : 'text-stone-600 group-hover:text-stone-900'}`}>
+                                    Type an email to add a new person
+                                </span>
+                                {searchResults.length === 0 && <span className="text-[8px] font-black bg-orange-200 text-orange-800 px-1 rounded">ENTER</span>}
+                            </div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {inputValue && (inputValue.trim()) && !showDropdown && (
+                  <button 
+                    onClick={() => processInput(inputValue)}
+                    className="px-3 py-1 bg-orange-100 text-orange-700 rounded-lg text-xs font-black hover:bg-orange-200 transition-colors"
+                  >
+                    QUICK ADD
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -428,10 +502,17 @@ export default function Page() {
             <h2 className="text-[10px] font-black uppercase tracking-[0.1em] flex items-center gap-2">
               <Settings2 size={14} /> Dev Testing Tools
             </h2>
+            <button 
+              onClick={() => copyToClipboard(testEmails.map(t => t.email).join(', '), 'all')}
+              className="text-[10px] font-black hover:text-orange-600 hover:bg-orange-50 px-2 py-1 rounded transition-colors flex items-center gap-1"
+            >
+              {copyFeedback === 'all' ? <ClipboardCheck size={12} /> : <Copy size={12} />}
+              COPY ALL
+            </button>
           </div>
           <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-3">
             {testEmails.map((test, i) => (
-              <div key={i} className="flex items-center justify-between p-3 bg-stone-50 rounded-xl border border-stone-100">
+              <div key={i} className="flex items-center justify-between p-3 bg-stone-50 rounded-xl border border-stone-100 group">
                 <div className="space-y-0.5 overflow-hidden">
                   <p className="text-[9px] font-black text-stone-300 uppercase tracking-tighter">{test.label}</p>
                   <p className="text-xs font-mono text-stone-600 truncate">{test.email}</p>
@@ -452,4 +533,6 @@ export default function Page() {
       </div>
     </div>
   );
-}
+};
+
+export default App;
