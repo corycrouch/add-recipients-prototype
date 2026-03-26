@@ -426,6 +426,12 @@ const App = () => {
                     onFocus={() => setShowDropdown(true)}
                     placeholder={recipients.length === 0 ? "Paste emails separated by commas or spaces..." : "Add another email..."}
                     className="w-full outline-none text-sm text-stone-900 font-bold bg-transparent h-8 py-0 leading-none"
+                    
+                    // --- ADD THESE LINES BELOW ---
+                    autoComplete="off"           // Tells the browser not to suggest old data
+                    data-1p-ignore               // Specifically tells 1Password to stay away
+                    data-lpignore="true"         // Tells LastPass to stay away
+                    name={`email-input-${Math.random()}`} // Gives it a random name so managers don't recognize it
                   />
                 </div>
 
