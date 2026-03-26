@@ -1,4 +1,4 @@
-'use client';
+'use-cient';
 
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Mail, X, Plus, Check, Trash2, MailQuestion, Settings2, ExternalLink, AlertCircle, Copy, ClipboardCheck, Info, SendHorizontal, CornerDownLeft, Database, ToggleRight, ToggleLeft, AtSign } from 'lucide-react';
@@ -9,7 +9,6 @@ const App = () => {
   const [editingIndex, setEditingIndex] = useState(null);
   const [backupData, setBackupData] = useState(null); 
   const [copyFeedback, setCopyFeedback] = useState(null);
-  const [isShaking, setIsShaking] = useState(false);
   const [isSyncedMode, setIsSyncedMode] = useState(false); // Testing toggle
   const [showDropdown, setShowDropdown] = useState(false);
   
@@ -66,11 +65,6 @@ const App = () => {
   };
 
   const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email?.trim());
-
-  const triggerShake = () => {
-    setIsShaking(true);
-    setTimeout(() => setIsShaking(false), 500);
-  };
 
   const addRecipient = (contact, manual = false) => {
     const isEmail = manual ? isValidEmail(contact.email) : true;
@@ -129,6 +123,20 @@ const App = () => {
     setInputValue('');
   };
 
+  const commitInput = () => {
+    if (!inputValue.trim()) return;
+
+    if (showDropdown && isSyncedMode) {
+      if (searchResults.length > 0) {
+        addRecipient(searchResults[0], false);
+      } else {
+        processInput(inputValue);
+      }
+    } else {
+      processInput(inputValue);
+    }
+  };
+
   const startEditing = (idx, currentList = recipients) => {
     setEditingIndex(idx);
     setBackupData({ ...currentList[idx] });
@@ -145,23 +153,26 @@ const App = () => {
   };
 
   const handleKeyDown = (e) => {
-    // If synced dropdown is open, Enter picks the top highlighted item
     if (e.key === 'Enter' && showDropdown && isSyncedMode && inputValue.trim()) {
         e.preventDefault();
-        if (searchResults.length > 0) {
-            addRecipient(searchResults[0], false);
-        } else {
-            processInput(inputValue);
-        }
+        commitInput();
         return;
     }
 
-    if (e.key === 'Enter' || e.key === ',' || e.key === ' ') {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      commitInput();
+    } else if (e.key === ',' || e.key === ' ') {
       if (inputValue.trim()) {
         e.preventDefault();
-        processInput(inputValue);
+        commitInput();
       }
     }
+  };
+
+  const handleBlur = () => {
+    commitInput();
+    setTimeout(() => setShowDropdown(false), 150);
   };
 
   const handlePopoverKeyDown = (e) => {
@@ -172,8 +183,6 @@ const App = () => {
         setEditingIndex(null);
         setBackupData(null);
         inputRef.current?.focus();
-      } else {
-        triggerShake();
       }
     } else if (e.key === 'Escape') {
       cancelAndRevert();
@@ -218,9 +227,6 @@ const App = () => {
         setEditingIndex(null);
         setBackupData(null);
       }
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowDropdown(false);
-      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -228,17 +234,6 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-stone-50 p-8 font-sans transition-colors duration-500 text-stone-900">
-      <style>{`
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          20%, 60% { transform: translateX(-6px); }
-          40%, 80% { transform: translateX(6px); }
-        }
-        .shake-animation {
-          animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
-        }
-      `}</style>
-      
       <div className="max-w-4xl mx-auto space-y-12">
         
         {/* Header */}
@@ -309,12 +304,11 @@ const App = () => {
                       </button>
                     </div>
 
+                    {/* Popover Logic */}
                     {editingIndex === idx && (
                       <div 
                         ref={popoverRef}
-                        className={`absolute top-full left-0 mt-3 w-72 bg-white rounded-2xl shadow-2xl border-2 border-stone-200 z-50 origin-top
-                          ${isShaking ? 'shake-animation' : 'animate-in fade-in zoom-in duration-200'}
-                        `}
+                        className="absolute top-full left-0 mt-3 w-72 bg-white rounded-2xl shadow-2xl border-2 border-stone-200 z-50 origin-top animate-in fade-in zoom-in duration-200"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="p-4 space-y-4">
@@ -423,15 +417,10 @@ const App = () => {
                       setShowDropdown(true);
                     }}
                     onKeyDown={handleKeyDown}
+                    onBlur={handleBlur}
                     onFocus={() => setShowDropdown(true)}
                     placeholder={recipients.length === 0 ? "Paste emails separated by commas or spaces..." : "Add another email..."}
                     className="w-full outline-none text-sm text-stone-900 font-bold bg-transparent h-8 py-0 leading-none"
-                    
-                    // --- ADD THESE LINES BELOW ---
-                    autoComplete="off"           // Tells the browser not to suggest old data
-                    data-1p-ignore               // Specifically tells 1Password to stay away
-                    data-lpignore="true"         // Tells LastPass to stay away
-                    name={`email-input-${Math.random()}`} // Gives it a random name so managers don't recognize it
                   />
                 </div>
 
@@ -445,6 +434,7 @@ const App = () => {
                       {searchResults.map((contact, i) => (
                         <button
                           key={i}
+                          onMouseDown={(e) => e.preventDefault()}
                           onClick={() => addRecipient(contact, false)}
                           className={`w-full flex items-center gap-3 p-3 transition-colors border-b border-stone-100 text-left group
                             ${i === 0 ? 'bg-stone-50 ring-inset ring-2 ring-orange-100' : 'hover:bg-stone-50'}`}
@@ -458,7 +448,7 @@ const App = () => {
                                 <span className={`text-sm font-bold transition-colors ${i === 0 ? 'text-orange-600' : 'text-stone-900 group-hover:text-orange-600'}`}>
                                 {contact.firstName} {contact.lastName}
                                 </span>
-                                {i === 0 && <span className="text-[8px] font-black bg-orange-200 text-orange-800 px-1 rounded">ENTER</span>}
+                                {i === 0 && <span className="text-[8px] font-black bg-orange-200 text-orange-800 px-1 rounded">ENTER / BLUR</span>}
                             </div>
                             <div className="flex items-center gap-2 text-[11px] text-stone-400 font-medium">
                               <span>{contact.jobTitle}</span>
@@ -470,6 +460,7 @@ const App = () => {
                       ))}
 
                       <button
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => processInput(inputValue)}
                         className={`w-full flex items-center gap-3 p-3 transition-colors text-left group
                           ${searchResults.length === 0 ? 'bg-stone-50 ring-inset ring-2 ring-orange-100' : 'hover:bg-stone-50'}`}
@@ -481,23 +472,14 @@ const App = () => {
                         <div className="flex flex-col">
                             <div className="flex items-center gap-2">
                                 <span className={`text-sm font-bold transition-colors ${searchResults.length === 0 ? 'text-orange-600' : 'text-stone-600 group-hover:text-stone-900'}`}>
-                                    Type an email to add a new person
+                                    Add <span>"{inputValue}"</span> as a new person
                                 </span>
-                                {searchResults.length === 0 && <span className="text-[8px] font-black bg-orange-200 text-orange-800 px-1 rounded">ENTER</span>}
+                                {searchResults.length === 0 && <span className="text-[8px] font-black bg-orange-200 text-orange-800 px-1 rounded">ENTER / BLUR</span>}
                             </div>
                         </div>
                       </button>
                     </div>
                   </div>
-                )}
-
-                {inputValue && (inputValue.trim()) && !showDropdown && (
-                  <button 
-                    onClick={() => processInput(inputValue)}
-                    className="px-3 py-1 bg-orange-100 text-orange-700 rounded-lg text-xs font-black hover:bg-orange-200 transition-colors"
-                  >
-                    QUICK ADD
-                  </button>
                 )}
               </div>
             </div>
