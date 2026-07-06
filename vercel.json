@@ -1,0 +1,3 @@
+{
+  "installCommand": "env -u NPM_TOKEN -u NPM_RC npm install"
+}
