@@ -101,7 +101,7 @@ const DESIGN_REQUIREMENTS = [
       '***Single add: The edit popover opens automatically so the user can fix it***',
       'Bulk add: The popop does not appear automatically',
       'Click an error chip to open the edit popover and correct the email',
-      'If the user does not fix or remove, it will be skipped at send time',
+      'The user must fix or remove invalid entries before sending',
     ],
   },
   {
@@ -246,6 +246,18 @@ const App = () => {
 
   const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email?.trim());
 
+  const getRecipientIssue = (recipient) => {
+    if (recipient.isInvalid) {
+      return { email: recipient.email, reason: 'Invalid email.' };
+    }
+    if (!recipient.firstName?.trim()) {
+      return { email: recipient.email, reason: 'First name is required.' };
+    }
+    return null;
+  };
+
+  const recipientNeedsAttention = (recipient) => getRecipientIssue(recipient) !== null;
+
   const parseInputItems = (text) =>
     text.split(/[,\s\n]+/).map((item) => item.trim()).filter(Boolean);
 
@@ -326,6 +338,14 @@ const App = () => {
   const canAddAsEmails = validEmailTokens.length > 0 && (isBulkEmailInput || inputIsValidEmail);
   const showAddNewOption = Boolean(trimmedInput);
   const dropdownItemCount = searchResults.length + (showAddNewOption ? 1 : 0);
+
+  const recipientIssues = recipients
+    .map(getRecipientIssue)
+    .filter(Boolean);
+  const hasRecipientErrors = recipientIssues.length > 0;
+  const recipientErrorMessage = hasRecipientErrors
+    ? `${recipientIssues.length} ${recipientIssues.length === 1 ? 'invalid email' : 'invalid emails'}. Click the name to edit or remove.`
+    : null;
 
   // Reset selected index when search results or input change
   useEffect(() => {
@@ -711,7 +731,11 @@ const App = () => {
             <div className="flex-1 relative w-full">
               <div 
                 className={`min-h-[56px] w-full bg-white border-2 rounded-[16px] px-3 py-2 flex flex-wrap items-center gap-2 transition-all cursor-text relative
-                  ${editingIndex !== null ? 'border-[#F44C10] ring-[5px] ring-[#FFCBAC]' : 'border-stone-200 focus-within:border-[#F44C10] focus-within:ring-[5px] focus-within:ring-[#FFCBAC]'}`}
+                  ${editingIndex !== null
+                    ? 'border-[#F44C10] ring-[5px] ring-[#FFCBAC]'
+                    : hasRecipientErrors
+                      ? 'border-[#D02A2A] ring-[5px] ring-[#FFD8D8]'
+                      : 'border-stone-200 focus-within:border-[#F44C10] focus-within:ring-[5px] focus-within:ring-[#FFCBAC]'}`}
                 onClick={() => inputRef.current?.focus()}
               >
                 {/* Recipient Chips */}
@@ -722,7 +746,7 @@ const App = () => {
                     <div 
                       onClick={(e) => { e.stopPropagation(); startEditing(idx); }}
                       className={`flex items-center gap-1.5 pl-1 pr-2 h-8 rounded-full text-[10px] font-medium transition-all group cursor-pointer border shadow-[0_2px_4px_-2px_rgba(48,41,33,0.15)]
-                        ${r.isInvalid 
+                        ${recipientNeedsAttention(r)
                           ? editingIndex === idx 
                             ? 'bg-[#FFD8D8] text-black border-[#D02A2A] border-dashed ring-2 ring-[#D02A2A]/20'
                             : 'bg-[#FFD8D8] text-black border-[#D02A2A] border-dashed'
@@ -732,8 +756,8 @@ const App = () => {
                       `}
                     >
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-normal uppercase shrink-0
-                        ${r.isInvalid ? 'bg-[#FFD8D8] text-[#D02A2A]' : `${avatarColor.bg} ${avatarColor.text}`}`}>
-                        {r.isInvalid ? <AlertTriangle size={12} strokeWidth={2.5} className="text-[#D02A2A]" /> : getInitials(r)}
+                        ${recipientNeedsAttention(r) ? 'bg-[#FFD8D8] text-[#D02A2A]' : `${avatarColor.bg} ${avatarColor.text}`}`}>
+                        {recipientNeedsAttention(r) ? <AlertTriangle size={12} strokeWidth={2.5} className="text-[#D02A2A]" /> : getInitials(r)}
                       </div>
                       <span className="max-w-[180px] truncate">
                         {r.firstName ? `${r.firstName} ${r.lastName}` : r.email}
@@ -917,6 +941,9 @@ const App = () => {
                   </div>
                 )}
               </div>
+              {recipientErrorMessage && (
+                <p className="mt-2 text-[10px] text-[#D02A2A]">{recipientErrorMessage}</p>
+              )}
             </div>
           </div>
           </div>
