@@ -1,3 +1,3 @@
 {
-  "installCommand": "env -u NPM_TOKEN -u NPM_RC npm install"
+  "installCommand": "rm -f .npmrc \"$HOME/.npmrc\" && printf 'registry=https://registry.npmjs.org/\\n' > .npmrc && npm install --registry=https://registry.npmjs.org/"
 }
