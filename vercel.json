@@ -1,3 +1,3 @@
 {
-  "installCommand": "printf 'registry=https://registry.npmjs.org/\\n' > .npmrc-public && env -u NPM_TOKEN -u NPM_RC -u NODE_AUTH_TOKEN npm install --userconfig=.npmrc-public"
+  "installCommand": "printf 'registry=https://registry.npmjs.org/\\n' > .npmrc-public && env -i HOME=\"$HOME\" PATH=\"$PATH\" USER=\"$USER\" npm install --userconfig=.npmrc-public"
 }
